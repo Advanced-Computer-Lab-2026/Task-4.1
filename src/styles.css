@@ -191,3 +191,5 @@ td { border-top: 1px solid #edf0f2; padding: 14px 13px; color: #607082; font-siz
   .history-row { grid-template-columns: 95px 1fr; }
   .modal { padding: 19px; }
 }
+
+.review-actions { display: flex; gap: 10px; align-items: center; }

@@ -85,6 +85,7 @@ export default function App() {
   const [reviews, setReviews] = useState(loadReviews);
   const [search, setSearch] = useState('');
   const [ratingFilter, setRatingFilter] = useState('all');
+  const [showMyReviews, setShowMyReviews] = useState(false);
   const [activeCourse, setActiveCourse] = useState(readRoute);
   const [editor, setEditor] = useState(null);
   const [error, setError] = useState('');
@@ -114,8 +115,9 @@ export default function App() {
     const text = `${review.courseCode} ${getCourse(review.courseCode)?.name || ''} ${review.comment} ${review.name}`.toLowerCase();
     const matchesSearch = text.includes(search.toLowerCase().trim());
     const matchesRating = ratingFilter === 'all' || review.rating === Number(ratingFilter);
-    return matchesSearch && matchesRating;
-  }), [reviews, search, ratingFilter]);
+    const matchesOwner = !showMyReviews || review.owner === 'you';
+    return matchesSearch && matchesRating && matchesOwner;
+  }), [reviews, search, ratingFilter, showMyReviews]);
 
   const userCourses = new Set(reviews.filter(review => review.owner === 'you').map(review => review.courseCode));
 
@@ -176,6 +178,7 @@ export default function App() {
     setReviews(SEED_REVIEWS);
     setSearch('');
     setRatingFilter('all');
+    setShowMyReviews(false);
     setNotice('Example records restored.');
   }
 
@@ -190,11 +193,11 @@ export default function App() {
           <span>Course Review Board</span>
         </button>
         <div className="nav-label">WORKSPACE</div>
-        <button className={section === 'overview' && !activeCourse ? 'nav-item active' : 'nav-item'} onClick={() => goHome('overview')}><span>⌂</span> Overview</button>
-        <button className={section === 'reviews' && !activeCourse ? 'nav-item active' : 'nav-item'} onClick={() => goHome('reviews')}><span>☷</span> Browse reviews</button>
+        <button className={section === 'overview' && !activeCourse ? 'nav-item active' : 'nav-item'} onClick={() => { setShowMyReviews(false); goHome('overview'); }}><span>⌂</span> Overview</button>
+        <button className={section === 'reviews' && !activeCourse && !showMyReviews ? 'nav-item active' : 'nav-item'} onClick={() => { setShowMyReviews(false); setSearch(''); goHome('reviews'); }}><span>☷</span> Browse reviews</button>
         <button className="nav-item" onClick={() => openEditor()}><span>＋</span> Write a review</button>
         <div className="nav-label nav-gap">YOUR SPACE</div>
-        <button className="nav-item" onClick={() => { setSearch(CURRENT_USER); setRatingFilter('all'); goHome('reviews'); }}><span>♡</span> Your reviews</button>
+        <button className={showMyReviews && section === 'reviews' && !activeCourse ? 'nav-item active' : 'nav-item'} onClick={() => { setSearch(''); setRatingFilter('all'); setShowMyReviews(true); goHome('reviews'); }}><span>♡</span> Your reviews</button>
         <div className="sidebar-note">
           <strong>Local demo</strong>
           <span>Changes are saved in this browser only.</span>
@@ -239,7 +242,7 @@ export default function App() {
                 <span className="card-kicker">YOUR REVIEWS</span>
                 <strong>{reviews.filter(review => review.owner === 'you').length}</strong>
                 <p>of {courseCodes.length} sample courses reviewed</p>
-                <button onClick={() => { setSearch(CURRENT_USER); goHome('reviews'); }}>View your reviews →</button>
+                <button onClick={() => { setShowMyReviews(true); setSearch(''); setRatingFilter('all'); goHome('reviews'); }}>View your reviews →</button>
               </div>
             </section>
 
@@ -257,7 +260,7 @@ export default function App() {
             </section>
 
             <section className="review-panel" id="reviews">
-              <div className="section-heading review-heading"><div><span className="eyebrow">STUDENT VOICES</span><h2>Browse reviews</h2><p>Search by course, student, comment, or rating.</p></div><button className="ghost-button" onClick={resetDemo}>Reset demo</button></div>
+              <div className="section-heading review-heading"><div><span className="eyebrow">STUDENT VOICES</span><h2>{showMyReviews ? 'Your reviews' : 'Browse reviews'}</h2><p>{showMyReviews ? 'Review and edit the feedback you have submitted.' : 'Search by course, student, comment, or rating.'}</p></div><div className="review-actions">{showMyReviews && <button className="ghost-button" onClick={() => { setShowMyReviews(false); setSearch(''); setRatingFilter('all'); }}>All reviews</button>}<button className="ghost-button" onClick={resetDemo}>Reset demo</button></div></div>
               <div className="filter-bar">
                 <label className="search-field"><span>⌕</span><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search reviews or course codes" aria-label="Search reviews" /></label>
                 <label className="select-field"><span>Rating</span><select value={ratingFilter} onChange={event => setRatingFilter(event.target.value)}><option value="all">All ratings</option>{[5,4,3,2,1].map(value => <option value={value} key={value}>{value} stars</option>)}</select></label>
