@@ -1,139 +1,115 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import './styles.css';
 
-const KEY = 'acl-course-pulse-v2';
+const STORAGE_KEY = 'course-review-demo-v2';
+const CURRENT_USER = 'You';
 
-// Fictional teaching records for the self-contained UI/UX exercise.
-// Staff names and course descriptions are examples, not GUC historical records.
-const COURSE_CATALOG = {
-  CSEN701: {
-    name: 'Advanced Computer Lab',
-    description: 'A project-focused course emphasizing teamwork, planning, software development, and delivery across several milestones.',
-    history: [
-      {year: '2025/26', instructors: ['Dr. Mariam Farouk'], tas: ['Yara Hassan', 'Omar Fawzy']},
-      {year: '2024/25', instructors: ['Dr. Karim Nabil'], tas: ['Nour Adel', 'Mina Sameh']},
-    ],
-  },
-  MATH204: {
-    name: 'Linear Algebra',
-    description: 'Vectors, matrices, linear systems, and mathematical methods used in technical problem solving.',
-    history: [
-      {year: '2025/26', instructors: ['Dr. Salma Younis'], tas: ['Layla Maher', 'Ahmed Sherif']},
-      {year: '2024/25', instructors: ['Dr. Rana Hamdy'], tas: ['Youssef Tarek', 'Dina Mourad']},
-    ],
-  },
-  CSEN401: {
-    name: 'Software Engineering',
-    description: 'Software requirements, architecture, implementation practices, testing, and collaborative development.',
-    history: [
-      {year: '2025/26', instructors: ['Dr. Tamer Elsayed'], tas: ['Rana Fathy', 'Adham Khalil']},
-      {year: '2024/25', instructors: ['Dr. Hala Mansour'], tas: ['Malak Samir', 'Ali Mahmoud']},
-    ],
-  },
-  HUMA101: {
-    name: 'Critical Thinking & Communication',
-    description: 'A discussion-based course about assessing arguments, presenting ideas, and communicating effectively.',
-    history: [
-      {year: '2025/26', instructors: ['Dr. Dina Saad'], tas: ['Mariam Hossam', 'Youssef Nader']},
-      {year: '2024/25', instructors: ['Dr. Reem Taha'], tas: ['Farah Amr', 'Sara Magdy']},
-    ],
-  },
-  CSEN202: {
-    name: 'Data Structures',
-    description: 'Core data organization techniques and algorithms, with a focus on selecting suitable structures for different problems.',
-    history: [
-      {year: '2025/26', instructors: ['Dr. Amina Rashed'], tas: ['Rami Elshamy', 'Nada Wael']},
-      {year: '2024/25', instructors: ['Dr. Yasser Salem'], tas: ['Hana Ehab', 'Bassel Mostafa']},
-    ],
-  },
-};
-const getCourse = code => COURSE_CATALOG[code?.toUpperCase()] || {
-  name: 'Course details not yet added',
-  description: 'This course does not have a profile in the example catalog.',
-  history: [],
-};
-const readRoute = () => {
-  const match = window.location.hash.match(/^#\/courses\/([^/?#]+)$/);
-  return match ? decodeURIComponent(match[1]).toUpperCase() : null;
-};
-const seed = [
-  {id:'r1',courseCode:'CSEN701',rating:4,comment:'A challenging team project. The weekly milestones helped.',owner:'you',name:'You',date:'2026-10-06'},
-  {id:'r2',courseCode:'CSEN701',rating:5,comment:'You learn the most when your group communicates well.',owner:'other',name:'Farida',date:'2026-10-02'},
-  {id:'r3',courseCode:'MATH204',rating:3,comment:'Useful material but the pace felt fast.',owner:'other',name:'Karim',date:'2026-09-28'},
-  {id:'r4',courseCode:'CSEN401',rating:4,comment:'Tutorial exercises are very important.',owner:'you',name:'You',date:'2026-09-24'},
-  {id:'r5',courseCode:'HUMA101',rating:5,comment:'Well organized and approachable.',owner:'other',name:'Mariam',date:'2026-09-21'},
-  {id:'r6',courseCode:'CSEN701',rating:3,comment:'Good practical work, but demanding during exam week.',owner:'other',name:'Youssef',date:'2026-09-15'},
-  {id:'r7',courseCode:'MATH204',rating:5,comment:'Excellent explanation of difficult concepts.',owner:'other',name:'Nadine',date:'2026-08-30'},
-  {id:'r8',courseCode:'CSEN401',rating:2,comment:'More worked examples in lectures would help.',owner:'other',name:'Adam',date:'2026-08-17'},
-  {id:'r9',courseCode:'CSEN202',rating:4,comment:'The assignments strengthened problem-solving skills.',owner:'other',name:'Hassan',date:'2026-08-09'},
+// All instructor names below are fictional demonstration data.
+const COURSES = [
+  { code: 'CSEN 301', name: 'Data Structures & Algorithms', department: 'Computer Science', credits: 3, description: 'Learn how to organize information, analyze algorithms, and choose efficient solutions to computational problems.', tags: ['Algorithms', 'Problem solving'], history: [{ year: '2024/25', staff: ['Dr. Maya Hassan', 'Dr. Leo Brandt'] }, { year: '2025/26', staff: ['Dr. Salma Adel', 'Dr. Maya Hassan'] }] },
+  { code: 'CSEN 402', name: 'Database Systems', department: 'Computer Science', credits: 3, description: 'Design relational databases, write SQL queries, and explore transactions, indexing, and practical data modeling.', tags: ['SQL', 'Data modeling'], history: [{ year: '2024/25', staff: ['Dr. Adam Farouk'] }, { year: '2025/26', staff: ['Dr. Nora Khalil', 'Dr. Adam Farouk'] }] },
+  { code: 'CSEN 501', name: 'Computer Networks', department: 'Computer Science', credits: 3, description: 'Understand how computers communicate, from network layers and routing to reliable protocols and security basics.', tags: ['Networking', 'Protocols'], history: [{ year: '2024/25', staff: ['Dr. Karim Nasser'] }, { year: '2025/26', staff: ['Dr. Lina Shawky'] }] },
+  { code: 'CSEN 602', name: 'Software Engineering', department: 'Computer Science', credits: 3, description: 'Work through requirements, testing, teamwork, and maintainable software design using realistic projects.', tags: ['Team projects', 'Testing'], history: [{ year: '2024/25', staff: ['Dr. Yara Amin'] }, { year: '2025/26', staff: ['Dr. Omar Aziz', 'Dr. Yara Amin'] }] },
+  { code: 'CSEN 701', name: 'Embedded Systems', department: 'Computer Engineering', credits: 3, description: 'Build hardware-aware programs using microcontrollers, GPIO, sensors, interrupts, and PWM.', tags: ['Microcontrollers', 'Hardware'], history: [{ year: '2024/25', staff: ['Dr. Elias Mansour'] }, { year: '2025/26', staff: ['Dr. Hana Youssef'] }] },
 ];
-function getSaved(){try {let s=JSON.parse(localStorage.getItem(KEY));return Array.isArray(s)?s:seed;}catch{return seed;}}
-const avg = a => a.length?(a.reduce((s,r)=>s+r.rating,0)/a.length).toFixed(1):'—';
-const stars = n => '★'.repeat(n)+'☆'.repeat(Math.max(0,5-n));
-export default function App(){
- const [reviews,setReviews] = useState(getSaved);
- const [search,setSearch] = useState('');
- const [rating,setRating] = useState('all');
- const [course,setCourse] = useState('CSEN701');
- const [editor,setEditor] = useState(null);
- const [error,setError] = useState('');
- const [notice,setNotice] = useState('');
- const [tab,setTab] = useState('Overview');
- const [activeCourseCode,setActiveCourseCode] = useState(readRoute);
- useEffect(()=>{
-  const changePage = () => {setActiveCourseCode(readRoute());window.scrollTo({top:0,behavior:'instant'});};
-  window.addEventListener('hashchange',changePage);
-  return ()=>window.removeEventListener('hashchange',changePage);
- },[]);
- const openCourse = code => {window.location.hash=`#/courses/${encodeURIComponent(code)}`;setActiveCourseCode(code.toUpperCase());window.scrollTo({top:0,behavior:'instant'});};
- const navigateTo = (where) => {
-  window.location.hash='#/';
-  setActiveCourseCode(null);
-  if(where==='reviews')requestAnimationFrame(()=>document.getElementById('review-list')?.scrollIntoView({behavior:'smooth'}));
-  else window.scrollTo({top:0,behavior:'smooth'});
- };
- useEffect(()=>localStorage.setItem(KEY,JSON.stringify(reviews)),[reviews]);
- const result = useMemo(()=>reviews.filter(r=>(rating==='all'||r.rating===Number(rating))&&`${r.courseCode} ${r.comment} ${r.name}`.toLowerCase().includes(search.toLowerCase())),[reviews,search,rating]);
- const selected = reviews.filter(x=>x.courseCode.toUpperCase()===course.trim().toUpperCase());
- const uniqueCourses = [...new Set(reviews.map(x=>x.courseCode))];
- const distribution = [5,4,3,2,1].map(n=>({n,total:reviews.filter(r=>r.rating===n).length}));
- function openEditor(r){if(r&&r.owner!=='you')return;setError('');setEditor({id:r?.id||null, courseCode:r?.courseCode||'',rating:String(r?.rating||''),comment:r?.comment||''});}
- function submit(e){e.preventDefault();if(!editor.courseCode.trim()){setError('Enter a course code.');return;}if(!/^[1-5]$/.test(editor.rating)){setError('Rating must be from 1 to 5.');return;}if(reviews.some(r=>r.id!==editor.id&&r.owner==='you'&&r.courseCode.toLowerCase()===editor.courseCode.trim().toLowerCase())){setError('You have already reviewed this course.');return;}
- const payload={courseCode:editor.courseCode.trim().toUpperCase(),rating:Number(editor.rating),comment:editor.comment.trim(),name:'You',owner:'you',date:new Date().toISOString().slice(0,10)};
- if(editor.id){setReviews(reviews.map(r=>r.id===editor.id?{...r,...payload}:r));setNotice('Review updated.');}else{setReviews([{...payload,id:'r-'+Date.now()},...reviews]);setNotice('Review posted.');}
- setEditor(null);
- }
- function reset(){setReviews(seed);setSearch('');setRating('all');setCourse('CSEN701');setEditor(null);setNotice('Example data restored.');}
- return <div className="review-app">
-  <aside className="sidebar"><div className="logo"><span>✦</span> course<span>pulse</span></div><div className="side-caption">WORKSPACE</div><button className={tab==='Overview'?'active':''} onClick={()=>{setTab('Overview');navigateTo('top');}}><span>▦</span> Overview</button><button className={tab==='Browse'?'active':''} onClick={()=>{setTab('Browse');navigateTo('reviews');}}><span>≡</span> Browse reviews</button><button onClick={()=>openEditor(null)}><span>＋</span> Write a review</button><div className="side-caption gap">YOUR SPACE</div><button onClick={()=>{setSearch('You');setTab('Browse');navigateTo('reviews');}}><span>♡</span> Your reviews</button><div className="side-end"><div className="badge-face">Y</div><div><strong>Your account</strong><small>Student profile</small></div></div></aside>
-  <main className="content">{activeCourseCode ? (
-    <section className="course-detail-page">
-      <button type="button" className="back-to-reviews" onClick={()=>navigateTo('reviews')}>← Back to reviews</button>
-      <header className="course-hero">
-        <div><p className="eyebrow">COURSE PROFILE</p><h1>{getCourse(activeCourseCode).name}</h1><p className="course-id">{activeCourseCode}</p><p className="course-description">{getCourse(activeCourseCode).description}</p></div>
-        <div className="course-mini-score"><small>COURSE AVERAGE</small><strong>{avg(reviews.filter(r=>r.courseCode.toUpperCase()===activeCourseCode))}</strong><span>{reviews.filter(r=>r.courseCode.toUpperCase()===activeCourseCode).length} review(s)</span></div>
-      </header>
-      <div className="course-details-grid">
-        <section className="panel teaching-history"><h2>Teaching history</h2><p>Instructors and teaching assistants for the previous two academic years.</p>
-          {getCourse(activeCourseCode).history.length ? getCourse(activeCourseCode).history.map(entry=><div className="teaching-entry" key={entry.year}>
-            <h3>{entry.year}</h3><div><small>INSTRUCTOR{entry.instructors.length===1?'':'S'}</small><span>{entry.instructors.join(', ')}</span></div><div><small>TEACHING ASSISTANTS</small><span>{entry.tas.join(', ')}</span></div>
-          </div>) : <p className="history-empty">No example teaching records for this course.</p>}
-          <p className="teaching-disclaimer">Illustrative course and teaching records; staff names are fictional.</p>
-        </section>
-        <section className="panel course-feedback"><div className="detail-review-head"><div><h2>Student reviews</h2><p>Feedback for {activeCourseCode} from the example community.</p></div><button className="post-review" onClick={()=>openEditor(null)}>＋ Write review</button></div>
-          {reviews.filter(r=>r.courseCode.toUpperCase()===activeCourseCode).length ? reviews.filter(r=>r.courseCode.toUpperCase()===activeCourseCode).map(r=><article className="course-review" key={r.id}>
-            <div className="course-review-top"><strong>{r.name}</strong><span>{stars(r.rating)}</span></div><p>{r.comment||'No comment provided'}</p><div className="course-review-meta"><span>Recently</span>{r.owner==='you'&&<button className="row-edit" onClick={()=>openEditor(r)}>Edit your review</button>}</div>
-          </article>) : <div className="course-review-empty">No reviews for this course yet.</div>}
-        </section>
-      </div>
-    </section>
-  ) : <><header className="page-head"><div><p className="eyebrow">ACADEMIC FEEDBACK PORTAL</p><h1>Course Review Board</h1><p>One place for course feedback, course signals and student opinions.</p></div><button className="post-review" onClick={()=>openEditor(null)}>＋ Write review</button></header>
-   <section className="metrics"><div className="metric"><small>ALL REVIEWS</small><strong>{reviews.length}</strong><span>Community contributions</span></div><div className="metric"><small>AVERAGE SCORE</small><strong>{avg(reviews)} <em>/ 5</em></strong><span>Calculated across entries</span></div><div className="metric"><small>COURSES RATED</small><strong>{uniqueCourses.length}</strong><span>Unique course codes</span></div></section>
-   {notice&&<div className="notice" role="status">{notice}<button onClick={()=>setNotice('')}>✕</button></div>}
-   <div className="analytic-grid"><section className="panel pulse"><div className="panel-head"><div><h2>Community rating overview</h2><p>Ratings from recent student submissions</p></div><span className="dots">···</span></div><div className="pulse-content"><div className="donut"><div><span>{avg(reviews)}</span><small>AVERAGE</small></div></div><div className="rating-bars">{distribution.map(d=><div key={d.n} className="rating-row"><span>{d.n}★</span><div className="barbg"><i style={{width:`${d.total/Math.max(...distribution.map(x=>x.total),1)*100}%`}}/></div><small>{d.total}</small></div>)}</div></div></section>
-    <section className="panel summary"><div className="panel-head"><div><h2>Course score lookup</h2><p>Check the average score for one course code.</p></div></div><label>Course code<input value={course} onChange={e=>setCourse(e.target.value)} placeholder="Course code"/></label><div className="score"><span>Overall rating</span><strong>{avg(selected)}</strong><small>{selected.length} review(s)</small></div><div className="banner">Data updates as new reviews are added.</div>{course.trim()&&<button type="button" className="lookup-course-link" onClick={()=>openCourse(course.trim().toUpperCase())}>View course details →</button>}</section></div>
-   <section className="review-list panel" id="review-list"><div className="panel-head reviews-heading"><div><h2>Explore student reviews</h2><p>Find a comment by course, rating or student.</p></div><button className="outline" onClick={reset}>Reset demo</button></div><div className="searchbar"><div className="searchinput"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} aria-label="Search reviews" placeholder="Search"/></div><label><span>Rating</span><select value={rating} onChange={e=>setRating(e.target.value)}><option value="all">All ratings</option>{[5,4,3,2,1].map(n=><option key={n} value={n}>{n} stars</option>)}</select></label><button onClick={()=>{setNotice('Filter preferences applied.');setTab('Browse');}}>Apply</button></div><div className="rows-wrapper"><table><thead><tr><th>Course</th><th>Stars</th><th>Student comment</th><th>Reviewer</th><th>Date</th><th>Action</th></tr></thead><tbody>{result.map(r=><tr key={r.id}><td><button type="button" className="course-link" title={`View ${getCourse(r.courseCode).name}`} onClick={()=>openCourse(r.courseCode)}><strong>{r.courseCode}</strong><small>{getCourse(r.courseCode).name}</small></button></td><td className="ratingcell">{stars(r.rating)}</td><td className="commentcell">{r.comment||'No comment provided'}</td><td>{r.name}</td><td>Recently</td><td>{r.owner==='you'?<button className="row-edit" onClick={()=>openEditor(r)}>Edit</button>:<span className="dim">—</span>}</td></tr>)}{result.length===0&&<tr><td colSpan="6">No reviews found.</td></tr>}</tbody></table></div><p className="tablefoot">{result.length} of {reviews.length} reviews • Campus feedback platform</p></section>
-  </>}
-  </main>
-  {editor&&<div className="overlay" onMouseDown={e=>e.target===e.currentTarget&&setEditor(null)}><div className="modal" role="dialog" aria-modal="true" aria-label="Write review"><div className="modal-title"><div><p className="eyebrow">YOUR CONTRIBUTION</p><h2>{editor.id?'Edit review':'Write a course review'}</h2><p>Share a rating and a short comment.</p></div><button onClick={()=>setEditor(null)} aria-label="Close">✕</button></div><form onSubmit={submit}><label>Course code<input value={editor.courseCode} onChange={e=>setEditor(s=>({...s,courseCode:e.target.value}))} placeholder="CSEN701"/></label><label>Overall rating<select value={editor.rating} onChange={e=>setEditor(s=>({...s,rating:e.target.value}))}><option value="">Choose score</option>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}</select></label><label>Comment<textarea value={editor.comment} rows={5} onChange={e=>setEditor(s=>({...s,comment:e.target.value}))} placeholder="Comment (optional)"/></label>{error&&<div className="formerror" role="alert">{error}</div>}<div className="modal-actions"><button type="button" onClick={()=>setEditor(null)}>Cancel</button><button className="post-review" type="submit">{editor.id?'Save review':'Submit review'}</button></div></form></div></div>}
- </div>;
+
+const EXAMPLE_REVIEWS = [
+  { id: 'ex-1', courseCode: 'CSEN 301', author: 'Mariam', rating: 5, comment: 'The exercises helped me understand the concepts. Keep up with the weekly problem sets!', createdAt: '2026-05-16' },
+  { id: 'ex-2', courseCode: 'CSEN 301', author: 'Omar', rating: 4, comment: 'Great content, but allow enough time for the assignments.', createdAt: '2026-04-28' },
+  { id: 'ex-3', courseCode: 'CSEN 402', author: 'Laila', rating: 5, comment: 'The SQL labs made everything click. Very practical.', createdAt: '2026-05-02' },
+  { id: 'ex-4', courseCode: 'CSEN 402', author: 'Youssef', rating: 3, comment: 'Useful but the group project takes planning.', createdAt: '2026-04-20' },
+  { id: 'ex-5', courseCode: 'CSEN 501', author: 'Nadine', rating: 4, comment: 'The diagrams and packet examples were really helpful.', createdAt: '2026-03-19' },
+  { id: 'ex-6', courseCode: 'CSEN 602', author: 'Mostafa', rating: 5, comment: 'You learn a lot from the team project and code reviews.', createdAt: '2026-05-08' },
+  { id: 'ex-7', courseCode: 'CSEN 701', author: 'Hana', rating: 4, comment: 'Hands-on labs are the best part. Practice wiring early.', createdAt: '2026-05-10' },
+  { id: 'ex-8', courseCode: 'CSEN 701', author: 'You', rating: 4, comment: 'The practical demos helped me connect code to circuits.', createdAt: '2026-05-17' },
+];
+
+function initialReviews() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (Array.isArray(saved) && saved.every((review) => review && typeof review === 'object')) return saved;
+  } catch { /* ignore invalid local data */ }
+  return EXAMPLE_REVIEWS.map((review) => ({ ...review }));
+}
+function pathFor(code) { return `/courses/${encodeURIComponent(code)}`; }
+function getCourseFromPath() {
+  const match = window.location.pathname.match(/^\/courses\/([^/]+)\/?$/);
+  if (!match) return null;
+  try { return COURSES.find((course) => course.code === decodeURIComponent(match[1])) || null; }
+  catch { return null; }
+}
+function Stars({ value, size = 'normal' }) {
+  return <span className={`stars ${size}`} aria-label={`${value} out of 5 stars`}>{'★'.repeat(Math.round(value))}<span className="stars-empty">{'★'.repeat(5 - Math.round(value))}</span></span>;
+}
+function RatingSummary({ reviews }) {
+  const average = reviews.length ? reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length : 0;
+  return <div className="rating-summary"><span className="rating-number">{reviews.length ? average.toFixed(1) : '—'}</span><span><Stars value={average} /><small>{reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</small></span></div>;
+}
+function ReviewCard({ review, onEdit, compact = false, onOpenCourse }) {
+  const own = review.author === CURRENT_USER;
+  return <article className="review-card">
+    <div className="review-head"><div className="avatar" aria-hidden="true">{review.author.slice(0, 1)}</div><div className="review-author"><strong>{review.author}</strong><span>{new Date(`${review.createdAt}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}{own ? ' · Your review' : ''}</span></div><Stars value={review.rating} /></div>
+    {compact && <button className="course-link" onClick={() => onOpenCourse(review.courseCode)}>{review.courseCode} ↗</button>}
+    <p>{review.comment || <span className="muted">No written comment</span>}</p>
+    {own && <button className="text-button" onClick={() => onEdit(review.courseCode)}>Edit your review →</button>}
+  </article>;
+}
+
+export default function App() {
+  const [reviews, setReviews] = useState(initialReviews);
+  const [pageCourse, setPageCourse] = useState(getCourseFromPath);
+  const [tab, setTab] = useState('courses');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('recommended');
+  const [reviewModal, setReviewModal] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews)); }, [reviews]);
+  useEffect(() => { const update = () => setPageCourse(getCourseFromPath()); window.addEventListener('popstate', update); return () => window.removeEventListener('popstate', update); }, []);
+  useEffect(() => { document.title = pageCourse ? `${pageCourse.code} · CourseScope` : 'CourseScope · Student course reviews'; }, [pageCourse]);
+  function goTo(code) { window.history.pushState({}, '', code ? pathFor(code) : '/'); setPageCourse(code ? COURSES.find((course) => course.code === code) : null); setNotice(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  const reviewsFor = (code) => reviews.filter((review) => review.courseCode === code);
+  const ownReview = (code) => reviews.find((review) => review.courseCode === code && review.author === CURRENT_USER);
+  function openReview(code) { const existing = ownReview(code); setReviewModal(code); setRating(existing ? existing.rating : 5); setComment(existing ? existing.comment : ''); setError(''); }
+  function saveReview(event) {
+    event.preventDefault();
+    const validRating = Number(rating);
+    if (!Number.isInteger(validRating) || validRating < 1 || validRating > 5) { setError('Choose a whole-number rating between 1 and 5.'); return; }
+    if (!COURSES.some((c) => c.code === reviewModal)) { setError('Choose a valid course.'); return; }
+    const existing = ownReview(reviewModal);
+    if (existing) setReviews((old) => old.map((review) => review.id === existing.id ? { ...review, rating: validRating, comment: comment.trim(), updatedAt: new Date().toISOString() } : review));
+    else setReviews((old) => [...old, { id: `local-${crypto.randomUUID ? crypto.randomUUID() : Date.now()}`, courseCode: reviewModal, author: CURRENT_USER, rating: validRating, comment: comment.trim(), createdAt: new Date().toISOString().slice(0, 10) }]);
+    setNotice(existing ? 'Your review was updated.' : 'Your review was published.');
+    setReviewModal(null);
+  }
+  function resetDemo() { if (window.confirm('Restore all example reviews? Your changes in this browser will be lost.')) { setReviews(EXAMPLE_REVIEWS.map((review) => ({ ...review }))); setNotice('Example records restored.'); setReviewModal(null); } }
+  const courseStats = (course) => { const list = reviewsFor(course.code); return { count: list.length, average: list.length ? list.reduce((sum, review) => sum + review.rating, 0) / list.length : 0 }; };
+  const visibleCourses = useMemo(() => COURSES.filter((c) => `${c.code} ${c.name} ${c.description}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name);
+    if (sort === 'rating') { const avg = (code) => { const list = reviews.filter((r) => r.courseCode === code); return list.length ? list.reduce((n, r) => n + r.rating, 0) / list.length : 0; }; return avg(b.code) - avg(a.code); }
+    return 0;
+  }), [search, sort, reviews]);
+  const filteredReviews = useMemo(() => [...reviews].filter((r) => `${r.courseCode} ${COURSES.find((c) => c.code === r.courseCode)?.name || ''} ${r.comment} ${r.author}`.toLowerCase().includes(search.toLowerCase())).sort((a,b) => b.createdAt.localeCompare(a.createdAt)), [reviews, search]);
+  const detailReviews = pageCourse ? [...reviewsFor(pageCourse.code)].sort((a,b) => b.createdAt.localeCompare(a.createdAt)) : [];
+  const detailStats = pageCourse ? courseStats(pageCourse) : null;
+
+  return <div className="app-shell">
+    <header className="site-header"><div className="container topbar"><button className="brand" onClick={() => goTo(null)}><span className="brand-mark">✳</span> Course<span>Scope</span></button><nav aria-label="Main navigation"><button className={!pageCourse && tab === 'courses' ? 'nav-active' : ''} onClick={() => { goTo(null); setTab('courses'); setSearch(''); }}>Explore courses</button><button className={!pageCourse && tab === 'reviews' ? 'nav-active' : ''} onClick={() => { goTo(null); setTab('reviews'); setSearch(''); }}>Student reviews</button></nav><div className="profile"><span className="profile-dot">Y</span><span>Signed in as <strong>You</strong></span></div></div></header>
+    <main className="container">
+      {notice && <div className="notice" role="status">✓ {notice}<button aria-label="Dismiss message" onClick={() => setNotice('')}>×</button></div>}
+      {pageCourse ? <>
+        <div className="breadcrumbs"><button onClick={() => { goTo(null); setTab('courses'); }}>All courses</button><span>/</span><span>{pageCourse.code}</span></div>
+        <div className="detail-layout"><section className="detail-main"><div className="eyebrow">COURSE OVERVIEW <span className="eyebrow-line" /></div><h1>{pageCourse.name}</h1><div className="pill-row"><span className="code-pill">{pageCourse.code}</span><span className="neutral-pill">{pageCourse.department}</span><span className="neutral-pill">{pageCourse.credits} credit hours</span></div><p className="detail-description">{pageCourse.description}</p><div className="section-heading"><div><div className="eyebrow">FROM PREVIOUS STUDENTS</div><h2>Student reviews <span className="heading-count">{detailReviews.length}</span></h2></div></div>{detailReviews.length ? <div className="reviews-list">{detailReviews.map((review) => <ReviewCard key={review.id} review={review} onEdit={openReview} />)}</div> : <div className="empty-state">No reviews yet. Be the first to share your experience.</div>}</section>
+        <aside className="detail-side"><section className="side-card rating-panel"><div className="eyebrow">STUDENT RATING</div><RatingSummary reviews={detailReviews} /><div className="mini-divider" /><p>Help other students decide if this course is right for them.</p><button className="primary-btn full" onClick={() => openReview(pageCourse.code)}>{ownReview(pageCourse.code) ? 'Edit my review' : 'Write a review'} <span>↗</span></button></section><section className="side-card"><div className="eyebrow">TEACHING HISTORY</div><h3>Previous academic years</h3><p className="sample-note">Fictional sample staff names for demo purposes.</p>{pageCourse.history.map((h) => <div className="year-row" key={h.year}><span className="year-label">{h.year}</span><div>{h.staff.map((name) => <div key={name}>{name}</div>)}</div></div>)}</section></aside></div>
+      </> : <>
+        <section className="hero"><div className="hero-copy"><div className="hero-kicker"><span className="tiny-sparkle">✳</span> BUILT FOR BETTER COURSE CHOICES</div><h1>Choose your next course<br />with <em>confidence.</em></h1><p>Real student perspectives, clear course details, and everything you need to make a more informed decision.</p><button className="primary-btn" onClick={() => { setTab('courses'); document.getElementById('browse')?.scrollIntoView({ behavior: 'smooth' }); }}>Explore courses <span>↗</span></button></div><div className="hero-art" aria-hidden="true"><div className="art-orbit"><div className="art-inner">✳</div></div><div className="art-card art-card-one"><strong>4.8 <span>★★★★★</span></strong><small>Student approved</small></div><div className="art-card art-card-two">✦ <strong>Learn from experience</strong></div></div></section>
+        <section className="browse" id="browse"><div className="section-heading"><div><div className="eyebrow">FIND YOUR FIT</div><h2>{tab === 'courses' ? 'Explore courses' : 'Student reviews'}</h2><p>{tab === 'courses' ? 'Browse courses and see what students are saying.' : 'Read honest feedback from previous students.'}</p></div><button className="outline-btn" onClick={() => { setReviewModal(''); openReview(COURSES[0].code); }}>+ Write a review</button></div><div className="filters"><div className="search-box"><span aria-hidden="true">⌕</span><input aria-label="Search courses and reviews" placeholder="Search by course name, code, or keyword..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>{tab === 'courses' && <select aria-label="Sort courses" value={sort} onChange={(e) => setSort(e.target.value)}><option value="recommended">Featured order</option><option value="name">Course name</option><option value="rating">Highest rated</option></select>}</div>{tab === 'courses' ? <div className="course-grid">{visibleCourses.map((course) => { const stats = courseStats(course); return <article className="course-card" key={course.code}><div className="course-card-top"><span className="code-pill">{course.code}</span><span className="course-arrow" aria-hidden="true">↗</span></div><h3>{course.name}</h3><p>{course.description}</p><div className="tag-row">{course.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><div className="course-card-bottom"><div><Stars value={stats.average} /><span className="small-rating">{stats.count ? `${stats.average.toFixed(1)} · ${stats.count} reviews` : 'No reviews yet'}</span></div><button onClick={() => goTo(course.code)}>View course →</button></div></article>; })}</div> : <div className="review-grid">{filteredReviews.map((review) => <ReviewCard key={review.id} review={review} compact onOpenCourse={goTo} onEdit={openReview} />)}</div>}{(tab === 'courses' ? visibleCourses.length === 0 : filteredReviews.length === 0) && <div className="empty-state">No matches found. Try a different search.</div>}</section>
+      </>}
+    </main>
+    <footer className="site-footer"><div className="container footer-inner"><span><strong>✳ CourseScope</strong> · Student-powered course insights</span><button onClick={resetDemo}>Reset demo</button><small>Demo data · Stored locally in this browser</small></div></footer>
+    {reviewModal !== null && <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setReviewModal(null); }}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="review-title"><div className="modal-top"><div><div className="eyebrow">SHARE YOUR EXPERIENCE</div><h2 id="review-title">{ownReview(reviewModal) ? 'Edit your review' : 'Write a review'}</h2></div><button className="close-button" aria-label="Close" onClick={() => setReviewModal(null)}>×</button></div><form onSubmit={saveReview}><label htmlFor="course-select">Course code</label><select id="course-select" value={reviewModal} onChange={(e) => { const code = e.target.value; setReviewModal(code); const existing = ownReview(code); setRating(existing ? existing.rating : 5); setComment(existing ? existing.comment : ''); setError(''); }}>{COURSES.map((c) => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}</select><label htmlFor="rating-select">Your rating</label><select id="rating-select" value={rating} onChange={(e) => setRating(Number(e.target.value))}>{[5,4,3,2,1].map((n) => <option key={n} value={n}>{n} {n === 1 ? 'star' : 'stars'}</option>)}</select><label htmlFor="review-comment">Comment <span className="muted">(optional)</span></label><textarea id="review-comment" rows={4} maxLength={1000} placeholder="What should another student know before taking this course?" value={comment} onChange={(e) => setComment(e.target.value)} /><p className="form-hint">One review per course. You can update your own review anytime.</p>{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="outline-btn" onClick={() => setReviewModal(null)}>Cancel</button><button className="primary-btn" type="submit">{ownReview(reviewModal) ? 'Save changes' : 'Publish review'} <span>↗</span></button></div></form></div></div>}
+  </div>;
 }
